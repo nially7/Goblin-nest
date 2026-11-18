@@ -1,7 +1,7 @@
 //@name demon_fx
-//@display-name 둥지 시스템 연출 + 운명선택 v1.47
+//@display-name 둥지 시스템 연출 + 운명선택 v1.48
 //@api 3.0
-//@version 1.47.0
+//@version 1.48.0
 //@update-url https://raw.githubusercontent.com/nially7/Goblin-nest/main/demon_fx_plugin.js
 (async()=>{
 'use strict';
@@ -1872,7 +1872,7 @@ const poll=setInterval(()=>{if(!doc)attach();else if(!playing)schedule()},1500);
 async function showDiag(){
  ensureHead();
  document.body.innerHTML='<div style="position:fixed;inset:0;overflow:auto;background:#0d0b08;color:#e6dccb;font:13px/1.8 sans-serif;padding:20px;white-space:pre-wrap" id="d"></div>';
- document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.47','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
+ document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.48','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
   '최근 오류:',...(diag.errors.length?diag.errors:['없음']),'','[미리보기] 아래 화면을 누르면 닫혀요.'].join('\n');
  document.body.addEventListener('click',async()=>{document.body.innerHTML='';try{await host.hideContainer()}catch{}},{once:true});
  await host.showContainer('fullscreen');
