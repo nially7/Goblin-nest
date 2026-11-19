@@ -1,7 +1,7 @@
 //@name demon_fx
-//@display-name 둥지 시스템 연출 + 운명선택 v1.49
+//@display-name 둥지 시스템 연출 + 운명선택 v1.51
 //@api 3.0
-//@version 1.49.0
+//@version 1.51.0
 //@update-url https://raw.githubusercontent.com/nially7/Goblin-nest/main/demon_fx_plugin.js
 (async()=>{
 'use strict';
@@ -40,7 +40,9 @@ const CSS=`
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:#05050a;overflow:hidden}
 body{font-family:Georgia,'Noto Serif KR',serif;color:#e8dcc8}
 .fx{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
-.skip{position:fixed;right:16px;bottom:14px;font:12px sans-serif;color:rgba(255,255,255,.35);letter-spacing:.1em;opacity:0;animation:in .4s 1.2s forwards}
+.skip,.ix-skip{position:fixed;top:14px;right:14px;z-index:2147483000;padding:9px 18px;border:1.5px solid rgba(255,255,255,.9);border-radius:999px;background:rgba(0,0,0,.5);color:#fff;font:700 14px/1 'Noto Sans KR',sans-serif;letter-spacing:.12em;text-shadow:0 1px 3px rgba(0,0,0,.8);box-shadow:0 0 14px rgba(255,255,255,.25);cursor:pointer;opacity:0;animation:in .4s 1.2s forwards}
+.ix-skip{animation-delay:.6s}
+.skip:hover,.ix-skip:hover{background:rgba(255,255,255,.18)}
 @keyframes in{to{opacity:1}}
 /* 프롤로그 */
 .pro{background:#0a0a0f;animation:scr 8s ease-in-out forwards}
@@ -671,7 +673,7 @@ async function fxInline(kind,a,s,c){
  const make=FX[kind];if(!make)return;
  try{
   ensureHead();const f=make(a,s,c);
-  document.body.innerHTML=f.html+'<div class="skip">눌러서 건너뛰기</div>';
+  document.body.innerHTML=f.html+'<div class="skip">건너뛰기 ▶▶</div>';
   if(f.run)try{f.run()}catch(e){err('fx run',e)}
   let done;const end=new Promise(r=>done=r);
   const t=setTimeout(done,f.ms);
@@ -684,7 +686,7 @@ async function play(kind,a,s,c){
  const make=FX[kind];if(!make||playing)return;playing=true;diag.played++;
  try{
   ensureHead();const f=make(a,s,c);
-  document.body.innerHTML=f.html+'<div class="skip">눌러서 건너뛰기</div>';
+  document.body.innerHTML=f.html+'<div class="skip">건너뛰기 ▶▶</div>';
   if(f.run)try{f.run()}catch(e){err('fx run',e)}
   let done;const end=new Promise(r=>done=r);
   const t=setTimeout(done,f.ms);
@@ -1070,7 +1072,7 @@ async function bossPlayLocal(code,name,f){
   if(BOSS_T[code].p==='B'&&u.mark)h+=`<div class="bfx-mark" style="background-image:url('${e(u.mark)}')"></div>`;
   h+=`<div class="bfx-full bfx-pc" style="background-image:url('${e(u.bg)}')"></div>`;
   h+=`<div class="bfx-full bfx-mo" style="background-image:url('${e(u.mbg||u.bg)}')"></div>`;
-  h+=`<div class="bfx-wbar"></div><img src="${e(u.char)}" class="bfx-char" alt=""><div class="bfx-gbar"><div class="bfx-name">${e(name)}</div></div></div><div class="skip">눌러서 건너뛰기</div>`;
+  h+=`<div class="bfx-wbar"></div><img src="${e(u.char)}" class="bfx-char" alt=""><div class="bfx-gbar"><div class="bfx-name">${e(name)}</div></div></div><div class="skip">건너뛰기 ▶▶</div>`;
   document.body.innerHTML=h;
   bgmStart('boss',main.bgm,f.bgm).catch(e=>err('bgm',e));
   let done;const end=new Promise(r=>done=r);
@@ -1099,15 +1101,20 @@ async function scenePlay(steps,opt){
   await host.showContainer('fullscreen');
   let root=document.querySelector('.ix');
   const $=c=>root.querySelector(c);
-  const wait=ms=>new Promise(r=>setTimeout(r,ms));
   // 삽화 미리 받아 두기
   const urls={};
   await Promise.all([...new Set(steps.filter(x=>x[0]==='img'||x[0]==='full'||x[0]==='scroll'||x[0]==='pan').flatMap(x=>x[0]==='pan'?[x[1],x[2]]:[x[1]]))].map(async n=>{urls[n]=await eventImg(n).catch(()=>'')}));
   let wake=null;onTap=ev=>{if(ev.type==='keydown'&&!/^(Enter| |ArrowRight)$/.test(ev.key))return;if(wake){const w=wake;wake=null;w()}};
+  // 건너뛰기 (우측 상단): 남은 장면을 모두 넘김
+  let skipped=false;const waiters=new Set();
+  const wait=ms=>skipped?Promise.resolve():new Promise(r=>{const f=()=>{clearTimeout(t);waiters.delete(f);r()};const t=setTimeout(f,ms);waiters.add(f)});
+  {const sk=document.createElement('button');sk.className='ix-skip';sk.textContent='건너뛰기 ▶▶';
+   sk.addEventListener('click',ev=>{ev.stopPropagation();if(skipped)return;skipped=true;sk.remove();[...waiters].forEach(f=>f());if(wake){const w=wake;wake=null;w()}});
+   document.body.appendChild(sk)}
   document.addEventListener('click',onTap);document.addEventListener('keydown',onTap);
-  const tap=async()=>{root.classList.add('ix-wait');await new Promise(r=>{wake=r});root.classList.remove('ix-wait')};
+  const tap=async()=>{if(skipped)return;root.classList.add('ix-wait');await new Promise(r=>{wake=r});root.classList.remove('ix-wait')};
   await wait(700);
-  for(let si=0;si<steps.length;si++){const st=steps[si];
+  for(let si=0;si<steps.length;si++){if(skipped)break;const st=steps[si];
    const k=st[0],v=st[1];
    if(k==='q'){
     const ms=3400+v.length*55;
@@ -1200,6 +1207,9 @@ async function scenePlay(steps,opt){
     }
     if(u2){pn.classList.add('ix-pan-2');root.classList.add('ix-shake');await wait(500);root.classList.remove('ix-shake')}
     await wait(2000);
+    // 뒤에 장면이 더 있으면: 바뀐 그림을 배경으로 남기고 덮개를 걷음 (마지막 장면이면 예전처럼 그대로)
+    if(si<steps.length-1){const ub=u2||u1;$('.ix-bd').style.backgroundImage=`url("${ub.replace(/"/g,'%22')}")`;$('.ix-bd').classList.add('ix-on');
+     pn.style.transition='opacity .7s';pn.style.opacity='0';await wait(750);pn.remove()}
    }else if(k==='scroll'){
     // 웹툰 스크롤: 세로로 긴 이미지를 위→아래로 천천히 스크롤
     const u=urls[v];if(!u)continue;
@@ -1872,7 +1882,7 @@ const poll=setInterval(()=>{if(!doc)attach();else if(!playing)schedule()},1500);
 async function showDiag(){
  ensureHead();
  document.body.innerHTML='<div style="position:fixed;inset:0;overflow:auto;background:#0d0b08;color:#e6dccb;font:13px/1.8 sans-serif;padding:20px;white-space:pre-wrap" id="d"></div>';
- document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.49','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
+ document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.51','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
   '최근 오류:',...(diag.errors.length?diag.errors:['없음']),'','[미리보기] 아래 화면을 누르면 닫혀요.'].join('\n');
  document.body.addEventListener('click',async()=>{document.body.innerHTML='';try{await host.hideContainer()}catch{}},{once:true});
  await host.showContainer('fullscreen');
