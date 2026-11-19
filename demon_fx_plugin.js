@@ -1,7 +1,7 @@
 //@name demon_fx
 //@display-name 둥지 시스템 연출 + 운명선택 v1.51
 //@api 3.0
-//@version 1.51.0
+//@version 1.52.0
 //@update-url https://raw.githubusercontent.com/nially7/Goblin-nest/main/demon_fx_plugin.js
 (async()=>{
 'use strict';
@@ -730,6 +730,51 @@ const BT_CSS=`
 .bt-skip{position:absolute;right:14px;bottom:-34px;font-size:12px;color:#d8c4a0;background:none;border:0;cursor:pointer;opacity:.75}
 `;
 const btImg=n=>GH_BASE?ghv(GH_BASE+'battle/'+n+'.webp'):'';
+/* ---------- 컷인 (숨은 네임드 참전 · 등장 대사 · 각성) : 그림은 깃허브 cutin 폴더 ID_cutin.webp ----------
+   s: calm(침착) · hot(열정) · sly(음흉) / join·enter·awake: 대사 / img2: 각성 그림 */
+const CUTIN={
+ C014:{n:'안젤라',s:'calm',join:'......'},
+ C024:{n:'하겐',s:'hot',join:'젊은이들에게만 맡겨둘순 없지!'},
+ C004:{n:'유하오란',s:'hot',join:'덤벼라 악당 놈들!'},
+ C053:{n:'미네아',s:'calm',join:'...죽어'},
+ C073:{n:'엘레스트라',s:'sly',join:'무능한 것들, 사라지거라'},
+ C501:{n:'나이엘라',s:'hot',enter:'살아서 돌아갈 생각은 포기하시지!',awake:'진심으로 간다.',img2:'C501_2'},
+};
+const CI_CSS=`
+.ci{position:fixed;inset:0;z-index:10000;overflow:hidden;pointer-events:auto;font-family:'Noto Sans KR',sans-serif}
+.ci-dim{position:absolute;inset:0;background:rgba(0,0,0,.62);animation:ciDim 2.6s ease both}
+.ci-band{position:absolute;left:50%;top:50%;width:200vmax;max-width:none;height:min(66vw,46vh);transform:translate(-50%,-50%) rotate(-18deg);overflow:hidden;border-top:4px solid var(--c);border-bottom:4px solid var(--c);box-shadow:0 0 40px var(--g);background:#0b0912;animation:ciBand 2.6s cubic-bezier(.2,.9,.2,1) both}
+.ci-band img{position:absolute;left:50%;top:0;height:100%;width:auto;min-width:122vw;max-width:none;object-fit:cover;transform:translateX(-50%);animation:ciFace 2.6s linear both}
+.ci-line,.ci-name{position:absolute;color:#fff;transform:rotate(-18deg);animation:ciTxt 2.6s ease both}
+.ci-line{left:5vw;top:calc(50% - min(33vw,23vh) - 12vh);transform-origin:left;font-size:clamp(18px,5.6vw,30px);font-weight:800;text-shadow:0 2px 8px #000,0 0 14px #000;white-space:nowrap}
+.ci-name{right:5vw;top:calc(50% + min(33vw,23vh) + 2vh);transform-origin:right;text-align:right}
+.ci-name i{display:block;font-style:normal;font-size:11px;letter-spacing:3px;color:var(--c)}
+.ci-name b{display:block;font-size:clamp(24px,8vw,40px);font-weight:900;text-shadow:0 0 12px var(--g)}
+.ci-skip{position:absolute;right:12px;top:12px;z-index:2;color:#fff;font-size:13px;font-weight:900;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.6);border-radius:8px;padding:4px 10px;cursor:pointer}
+.ci.calm{--c:#b07cff;--g:#8a4dff88}
+.ci.hot{--c:#ff7a3c;--g:#ff3c1e99}.ci.hot .ci-band{animation:ciBand 2.6s cubic-bezier(.2,.9,.2,1) both,ciShake .5s .3s linear 2}
+.ci.sly{--c:#5fd18a;--g:#1e7a4a99}.ci.sly .ci-band img{animation:ciFace 2.6s linear both,ciGlitch .35s .3s steps(2) 3}
+@keyframes ciDim{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}
+@keyframes ciBand{0%{transform:translate(50%,-50%) rotate(-18deg)}15%,85%{transform:translate(-50%,-50%) rotate(-18deg)}100%{transform:translate(-150%,-50%) rotate(-18deg)}}
+@keyframes ciFace{0%{margin-left:3%}100%{margin-left:-3%}}
+@keyframes ciTxt{0%,15%{opacity:0}25%,85%{opacity:1}100%{opacity:0}}
+@keyframes ciShake{0%,100%{margin-top:0}25%{margin-top:-6px}75%{margin-top:6px}}
+@keyframes ciGlitch{0%{filter:none}50%{filter:hue-rotate(90deg) contrast(1.6);margin-left:-2%}100%{filter:none}}
+`;
+// 컷인 하나 (그림을 못 받으면 건너뜀) — 끝나면 resolve
+async function cutinPlay(c){
+ const id=String(c.id||'').match(/^[A-Z]\d+/);const D=id&&CUTIN[id[0]];if(!D)return;
+ const line=D[c.k]||(c.k==='join'?D.join:'');if(!line)return;
+ const url=GH_BASE?ghv(GH_BASE+'cutin/'+(c.k==='awake'&&D.img2?D.img2:id[0])+'_cutin.webp'):'';
+ if(!url||!await decodeImg(url))return;
+ if(!document.getElementById('ci-style')){const st=document.createElement('style');st.id='ci-style';st.textContent=CI_CSS;document.head.appendChild(st)}
+ const tag=c.k==='join'?'HIDDEN · 참전':c.k==='awake'?'각성':'';
+ const el=document.createElement('div');el.className='ci '+(D.s||'calm');
+ el.innerHTML=`<div class="ci-dim"></div><div class="ci-band"><img src="${url}"></div><div class="ci-line">「 ${esc(line)} 」</div><div class="ci-name">${tag?`<i>${tag}</i>`:''}<b>${esc(D.n)}</b></div><button class="ci-skip">건너뛰기 ▶▶</button>`;
+ document.body.appendChild(el);
+ await new Promise(res=>{const t=setTimeout(res,2600);el.querySelector('.ci-skip').onclick=()=>{clearTimeout(t);res()}});
+ el.remove();
+}
 const BT_HIT={gob:'hit_gob',knight:'hit_knight',wolf:'hit_wolf',drake:'hit_drake',pal:'hit_elite',archer:'hit_archer',mage:'hit_mage',elfr:'hit_elfr',humr:'hit_humr'};
 const BT_LOOT={gob:'lgob',knight:'lknight',wolf:'lwolf',drake:'ldrake',pal:'lelite',archer:'larcher',mage:'lmage',elfr:'lelfr',humr:'lhumr'};
 const BT_STAND={gob:1,knight:1,wolf:1,drake:1,pal:1};   // 1번이 서 있는 그림인 세트 (나머지는 1~3이 모두 달리기)
@@ -798,10 +843,23 @@ ${atk?`<img id="bvil" src="${src(VS[0])}" style="right:16px;bottom:52px;width:19
   const pick=(arr,s)=>{let v=arr[0][1];for(const[a,b]of arr)if(s>=a)v=b;return v};
   let done=false,skip=false,t0=null;
   $('bskip').onclick=()=>{skip=true};
+  // 컷인: 해당 라운드 기록이 뜨는 시점에 전투를 멈추고 재생
+  const cuts=(Array.isArray(P.cuts)?P.cuts:[]).filter(c=>c&&CUTIN[String(c.id||'').replace(/[^A-Z0-9].*$/,'')]);
+  const maxR=Math.max(1,...logs.map(x=>+(String(x).match(/^(\d+)R/)||[])[1]||0));
+  const cutT=cuts.map(c=>{const nm=(CUTIN[String(c.id).replace(/[^A-Z0-9].*$/,'')]||{}).n||'';
+   let i=logs.findIndex(x=>String(x).startsWith(c.r+'R')&&(c.k==='enter'||String(x).includes(nm)));
+   if(i<0)i=logs.findIndex(x=>String(x).startsWith(c.r+'R'));
+   return i>=0?logT[i]:2.2+(tMeleeEnd-2.2)*(c.r-1)/maxR});
+  {const o=cuts.map((c,i)=>[cutT[i],c]).sort((a,b)=>a[0]-b[0]);o.forEach(([t,c],i)=>{cutT[i]=t;cuts[i]=c})}
+  let cutI=0,hold=0,holdAt=null;
   const finish=new Promise(res=>{$('bok').onclick=()=>res()});
   const W=$('bus');
   function frame(ts){
-   if(done)return;if(t0===null)t0=ts;let s=(ts-t0)/1000;if(skip)s=Math.max(s,tRes+.01);
+   if(done)return;if(t0===null)t0=ts;
+   if(holdAt!==null){requestAnimationFrame(frame);return}
+   let s=(ts-t0-hold)/1000;if(skip)s=Math.max(s,tRes+.01);
+   if(!skip&&cutI<cuts.length&&s>=cutT[cutI]){const c=cuts[cutI++];holdAt=ts;
+    cutinPlay(c).catch(e=>err('cutin',e)).finally(()=>{hold+=performance.now()-holdAt;holdAt=null});requestAnimationFrame(frame);return}
    const k=Math.floor(s*6),mv=(a,b,p)=>a+(b-a)*Math.min(1,Math.max(0,p));
    let hitUs=false,hitEn=false,hitV=false,pj=null;
    for(const[st,img,d,who]of shots){const p=(s-st)/.6;if(p>=0&&p<1)pj=[img,d,p];if(s>st+.6&&s<st+1.1){if(who==='us')hitUs=true;else if(who==='en')hitEn=true;else hitV=true}}
