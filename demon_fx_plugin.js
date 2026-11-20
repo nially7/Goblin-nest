@@ -1,7 +1,7 @@
 //@name demon_fx
 //@display-name 둥지 시스템 연출 + 운명선택 v1.51
 //@api 3.0
-//@version 1.54.0
+//@version 1.55.2
 //@update-url https://raw.githubusercontent.com/nially7/Goblin-nest/main/demon_fx_plugin.js
 (async()=>{
 'use strict';
@@ -126,6 +126,9 @@ body{font-family:Georgia,'Noto Serif KR',serif;color:#e8dcc8}
 .ix-blood{background:radial-gradient(ellipse at 50% 42%,#2b050b,#0a0103 62%,#000)}
 .ix-blood .ix-smoke{background:radial-gradient(circle,rgba(190,20,50,.24),transparent 62%)}.ix-blood .ix-s2{background:radial-gradient(circle,rgba(60,150,80,.1),transparent 60%)}
 .ix-q-g{color:#a8f0bf;text-shadow:0 0 14px rgba(60,200,110,.9),0 0 40px rgba(20,140,70,.6)}
+.ix-q-rs{color:#ff3b4e;font-weight:700;text-shadow:0 0 14px rgba(230,30,60,.95),0 0 44px rgba(170,0,30,.8)}
+.ix-shk{display:inline-block;animation:ixShk .14s steps(2) infinite}
+@keyframes ixShk{0%{transform:translate(0,0)}25%{transform:translate(-2px,1px) rotate(-.4deg)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px) rotate(.4deg)}100%{transform:translate(1px,2px)}}
 .ix-q-r{color:#ff6b78;text-shadow:0 0 14px rgba(230,30,60,.95),0 0 44px rgba(170,0,30,.7)}
 .ix-forest{background:radial-gradient(ellipse at 50% 46%,#16180e,#060704 62%,#000)}
 .ix-forest .ix-smoke{background:radial-gradient(circle,rgba(110,130,70,.16),transparent 62%)}.ix-forest .ix-s2{background:radial-gradient(circle,rgba(150,110,60,.1),transparent 60%)}
@@ -459,6 +462,59 @@ const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 function hexText(h){try{if(!h)return '';const b=new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));return new TextDecoder().decode(b)}catch{return ''}}
 function particles(){let s='';const P=[[12,65,2,5,.5],[42,78,1.5,6,.8],[70,58,2.5,4.5,.3],[28,72,1,7,1],[55,82,2,5.5,.6],[85,50,1.5,6.5,1.2],[8,40,2,5,1.5],[90,68,1,4,.4]];
  for(const[x,y,z,d,dl]of P)s+=`<div class="pt" style="left:${x}%;top:${y}%;width:${z}px;height:${z}px;animation-duration:${d}s;animation-delay:${dl}s"></div>`;return s}
+/* ---------- 아르카나 달성: 카드가 돌다가 아르카나가 떠오름 (그림은 깃허브 arcana/이름.webp, 뒷면 arcana/back.webp) ---------- */
+function arcInfo(a){
+ const t=String(a||'').replace(/[【】]/g,'').trim(),m=t.match(/^([0IVXL]+)\s*-\s*(.+)$/);
+ const name=(m?m[2]:t).trim(),key=name.toLowerCase().replace(/^the\s+/,'').replace(/[^a-z]+/g,'_').replace(/^_+|_+$/g,'');
+ return {num:m?m[1]:'',name,key};
+}
+const ARC_CSS=`
+.arc{position:fixed;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#1d1236 0%,#0a0614 55%,#030208 100%);font-family:'Cinzel','Noto Serif KR',serif;--W:min(54vw,34vh,300px);--Y:42%}
+.arc-st i{position:absolute;background:#e9dcff;border-radius:50%;opacity:.2;animation:arcTw 2.8s ease-in-out infinite}@keyframes arcTw{50%{opacity:.9}}
+.arc-ring{position:absolute;left:50%;top:var(--Y);width:calc(var(--W)*1.9);height:calc(var(--W)*1.9);translate:-50% -50%;opacity:0;animation:arcRin 1s ease .2s forwards,arcRot 40s linear infinite}
+.arc-ring svg{width:100%;height:100%;display:block}.arc-ring line,.arc-ring circle,.arc-ring polygon{stroke:#c9a35a;stroke-width:1.2;fill:none}.arc-ring text{fill:#c9a35a;font-size:11px;text-anchor:middle;letter-spacing:1px}
+.arc-ring2{width:calc(var(--W)*1.45);height:calc(var(--W)*1.45);animation:arcRin 1s ease .4s forwards,arcRot 25s linear infinite reverse}
+@keyframes arcRin{from{opacity:0;scale:.6}to{opacity:.55;scale:1}}@keyframes arcRot{to{rotate:360deg}}
+.arc-rays{position:absolute;left:50%;top:var(--Y);width:260vmax;height:260vmax;translate:-50% -50%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--c) 30%,#ffd98a 70%) 0 4deg,transparent 4deg 18deg);opacity:0;-webkit-mask:radial-gradient(circle,#000 0,transparent 30%);mask:radial-gradient(circle,#000 0,transparent 30%);animation:arcRay 1.2s ease 3.1s forwards,arcRot 60s linear 3.1s infinite}
+@keyframes arcRay{to{opacity:.35}}
+.arc-pt{position:absolute;left:50%;top:var(--Y);width:8px;height:8px;margin:-4px;border-radius:50%;background:#fff;box-shadow:0 0 30px 12px #b98cff;opacity:0;animation:arcPt 1s ease forwards}
+@keyframes arcPt{0%{opacity:0;transform:scale(0)}60%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(3)}}
+.arc-stage{position:absolute;left:50%;top:var(--Y);perspective:1100px}
+.arc-glow{position:absolute;left:calc(var(--W)*-.9);top:calc(var(--W)*-1.15);width:calc(var(--W)*1.8);height:calc(var(--W)*2.3);border-radius:50%;background:radial-gradient(ellipse,#ffcf7a99,transparent 65%);opacity:0;animation:arcGl .9s ease 3.25s forwards}@keyframes arcGl{40%{opacity:.9}to{opacity:.4}}
+.arc-wrap{position:absolute;left:calc(var(--W)*-.5);top:calc(var(--W)*-.75);width:var(--W);height:calc(var(--W)*1.5);opacity:0;transform-style:preserve-3d;animation:arcWp .3s ease .7s forwards}@keyframes arcWp{to{opacity:1}}
+.arc-card{position:absolute;inset:0;transform-style:preserve-3d;transform:scale(.25) rotateY(180deg);animation:arcSpin 2.6s cubic-bezier(.15,.6,.25,1) .7s forwards}
+@keyframes arcSpin{0%{transform:scale(.25) rotateY(180deg)}100%{transform:scale(1) rotateY(1800deg)}}
+.arc-face{position:absolute;inset:0;border-radius:4.5%/3%;background:#140c22 center/cover;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 0 0 1px #c9a35a88,0 10px 40px #000a}
+.arc-back{transform:rotateY(180deg)}
+.arc-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#fff,#ffe9b8 30%,transparent 70%);opacity:0;animation:arcFl .7s ease 3.25s forwards;pointer-events:none}@keyframes arcFl{25%{opacity:.95}to{opacity:0}}
+.arc-dust b{position:absolute;top:calc(var(--Y) + var(--W)*.6);width:3px;height:3px;border-radius:50%;background:#ffd98a;box-shadow:0 0 6px #ffd98a;opacity:0;animation:arcDu 2.6s ease-out infinite}
+@keyframes arcDu{0%{opacity:0;transform:none}20%{opacity:1}100%{opacity:0;transform:translate(var(--x),-46vh)}}
+.arc-tt{position:absolute;left:0;right:0;top:calc(var(--Y) + var(--W)*.75 + 26px);text-align:center;padding:0 12px}
+.arc-tt small{display:block;color:#b996ff;font-size:11px;letter-spacing:.6em;opacity:0;animation:arcUp .8s ease 3.6s forwards}
+.arc-tt b{display:block;color:#f3d68e;font-size:clamp(20px,6.5vw,32px);font-weight:700;margin-top:10px;text-shadow:0 0 18px #c9a35a;opacity:0;letter-spacing:.5em;white-space:nowrap;animation:arcNm 1.2s ease 3.8s forwards}
+.arc-tt .arc-ln{width:0;height:1px;margin:12px auto;background:linear-gradient(90deg,transparent,#c9a35a,transparent);animation:arcLn 1s ease 4.2s forwards}
+.arc-tt span{display:block;color:#e6dccb;font:500 14px 'Noto Serif KR',serif;opacity:0;animation:arcUp .8s ease 4.5s forwards}
+.arc-tt em{display:block;margin-top:22px;color:#fff8;font:12px sans-serif;font-style:normal;opacity:0;animation:arcUp .8s ease 5.4s forwards}
+@keyframes arcUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes arcNm{to{opacity:1;letter-spacing:.06em}}@keyframes arcLn{to{width:min(240px,70vw)}}
+`;
+function arcFx(a,s,c){
+ const I=arcInfo(a),img=GH_BASE?ghv(GH_BASE+'arcana/'+I.key+'.webp'):'',bk=GH_BASE?ghv(GH_BASE+'arcana/back.webp'):'';
+ const title=(I.num?I.num+' · ':'')+I.name.toUpperCase();
+ let ticks='',runes='',stars='',dust='';
+ const nums=['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'];
+ for(let i=0;i<60;i++)ticks+=`<line x1="200" y1="14" x2="200" y2="${i%5?24:32}" transform="rotate(${i*6} 200 200)"/>`;
+ nums.forEach((n,i)=>runes+=`<text x="200" y="52" transform="rotate(${(i*360/22).toFixed(2)} 200 200)">${n}</text>`);
+ for(let i=0;i<60;i++)stars+=`<i style="left:${(i*37)%100}%;top:${(i*53)%100}%;animation-delay:${(i%7)*.4}s;width:${1+i%3}px;height:${1+i%3}px"></i>`;
+ for(let i=0;i<26;i++)dust+=`<b style="left:${30+(i*17)%40}%;animation-delay:${(3+(i%9)*.18).toFixed(2)}s;--x:${(i*29)%60-30}px"></b>`;
+ return {ms:12000,pre:[img,bk].filter(Boolean),html:`<style>${ARC_CSS}</style><div class="arc" style="--c:#${/^[0-9a-fA-F]{6}$/.test(c||'')?c:'c9a35a'}">
+ <div class="arc-st">${stars}</div><div class="arc-rays"></div>
+ <div class="arc-ring"><svg viewBox="0 0 400 400"><circle cx="200" cy="200" r="186"/><circle cx="200" cy="200" r="170"/>${ticks}${runes}</svg></div>
+ <div class="arc-ring arc-ring2"><svg viewBox="0 0 400 400"><circle cx="200" cy="200" r="190"/><polygon points="200,20 356,290 44,290"/><polygon points="200,380 44,110 356,110"/></svg></div>
+ <div class="arc-pt"></div>
+ <div class="arc-stage"><div class="arc-glow"></div><div class="arc-wrap"><div class="arc-card"><div class="arc-face" style="background-image:url('${esc(img)}')"></div><div class="arc-face arc-back" style="background-image:url('${esc(bk)}')"></div></div></div></div>
+ <div class="arc-dust">${dust}</div><div class="arc-flash"></div>
+ <div class="arc-tt"><small>ARCANA AWAKENED</small><b>${esc(title)}</b><div class="arc-ln"></div>${s?`<span>${esc(s)}</span>`:''}<em>화면을 눌러 닫기</em></div></div>`};
+}
 const FX={
  potion:(a)=>({ms:6200,html:`<div class="fx rj" style="--sc:${Math.max(.7,Math.min(1.6,innerHeight/600,innerWidth/400))}"><div class="pt-bl"></div><div class="pt-st">
   <svg class="pt-bt" viewBox="0 0 90 140"><defs><linearGradient id="ptg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ff9fd2"/><stop offset="1" stop-color="#d42a83"/></linearGradient></defs>
@@ -496,6 +552,7 @@ const FX={
   <div class="ham"><svg viewBox="0 0 100 100"><rect x="4" y="80" width="70" height="9" rx="3" fill="#7a5230" stroke="#2a1a0c" stroke-width="2"/><rect x="64" y="62" width="28" height="36" rx="3" fill="#8b8f96" stroke="#2c2f33" stroke-width="2.5"/><rect x="64" y="62" width="28" height="7" rx="2" fill="#c3c7cd" opacity=".75"/><rect x="88" y="66" width="4" height="28" fill="#5d6166"/></svg></div>
   <div class="ttk k1">뚝딱!</div><div class="ttk k2">뚝딱!</div></div>
   <div class="tx"><div class="main">${esc(a)}</div><div class="sub">${esc(s||'건설 시작')}</div></div></div>`}),
+ arcana:(a,s,c)=>arcFx(a,s,c),
  preend:()=>({ms:7500,html:`<div class="fx pre"><div class="red"></div><div class="scan"></div><div class="tx"><div class="sub">the gods intervene</div><div class="main" data-t="THE END BEGINS" style="position:relative">THE END BEGINS</div></div></div>`}),
 };
 
@@ -710,6 +767,7 @@ async function play(kind,a,s,c){
  const make=FX[kind];if(!make||playing)return;playing=true;diag.played++;
  try{
   ensureHead();const f=make(a,s,c);
+  if(f.pre&&f.pre.length)await Promise.race([Promise.all(f.pre.map(u=>new Promise(r=>{const im=new Image();im.onload=im.onerror=r;im.src=u}))),new Promise(r=>setTimeout(r,3000))]);
   document.body.innerHTML=f.html+'<div class="skip">건너뛰기 ▶▶</div>';
   if(f.run)try{f.run()}catch(e){err('fx run',e)}
   let done;const end=new Promise(r=>done=r);
@@ -1200,7 +1258,7 @@ async function scenePlay(steps,opt){
    const k=st[0],v=st[1];
    if(k==='q'){
     const ms=3400+v.length*55;
-    $('.ix-stage').innerHTML=`<p class="ix-q ix-q-${st[2]||'p'}" style="animation-duration:${ms}ms">${esc(U(v))}</p>`;
+    $('.ix-stage').innerHTML=`<p class="ix-q ix-q-${st[2]||'p'}" style="animation-duration:${ms}ms">${st[2]==='rs'?`<span class="ix-shk">${esc(U(v))}</span>`:esc(U(v))}</p>`;
     await wait(ms+250);
    }else if(k==='n'){
     $('.ix-stage').innerHTML='<div class="ix-n">'+v.map((p,i)=>`<p style="animation-delay:${(i*.9).toFixed(1)}s">${esc(U(p)).replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\n]+)\*/g,'<i>$1</i>').replace(/\n/g,'<br>')}</p>`).join('')+'</div>';
@@ -1334,7 +1392,10 @@ async function scenePlay(steps,opt){
  playing=false;
  return bossDone;
 }
-const introPlay=()=>scenePlay(INTRO,{theme:'violet'});
+const INTRO_OUTER=[["n",["아무것도 보이지 않는다.","칠흑같은 어둠 속...","양의 울음소리만이 메아리 친다."]],
+ ["q","\"잘왔단다 사랑하는 아가\"","rs"],
+ ["n",["당신은 누군가가 자신을 껴안아 주는듯한 느낌이 들었다.","아무런 생각도 들지 않는다. 당신은 그저 어머니의 품속에서 심연으로 빨려들어갔다."]]];
+const introPlay=id=>id==='outer'?(()=>{try{if(GH_BASE){const au=new Audio(ghv(GH_BASE+'sfx/bleat.mp3'));au.volume=.7;setTimeout(()=>au.play().catch(()=>{}),1600)}}catch{}return scenePlay(INTRO_OUTER,{theme:'blood'})})():scenePlay(INTRO,{theme:'violet'});
 // 이야기 재생: 책(text) → 화면 글자 연출(tail/scene) → 보스 (연출 안에서 이미 나왔으면 생략)
 // 책장에서 연 이야기: 펼침 연출 → (책이면 덮개 없이) 이야기
 async function shelfStory(id,cat,user,variant){
@@ -1598,10 +1659,10 @@ async function bossPlay(code,name){
 const IMG_BASE=GH_BASE?GH_BASE+'destiny/':'';
 const IMG_FILES={J01:'J01.webp',J02:'J02.webp',J03:'J03.webp',J04:'J04.webp',J05:'J05.webp',J06:'J06.webp',J07:'J07.webp',
  A1:'ANI01.webp',A2:'ANI02.webp',A3:'ANI03.webp',A4:'ANI04.webp',A5:'ANI05.webp',A6:'ANI06.webp',A7:'ANI07.webp',A8:'ANI08.webp',A9:'ANI09.webp',
- CB:'card_back.webp'};
+ CB:'card_back.webp',J08:'J08.webp',J08X:'J08X.webp',CB8:'CB8.webp',CRK:'crack.webp'};
 // 주소가 있으면 플러그인이 켜질 때 미리 받아 둠 (처음 열 때도 끊김 없이)
 const dsPre=[];if(IMG_BASE)for(const k in IMG_FILES){try{const im=new Image();im.src=ghv(IMG_BASE+IMG_FILES[k]);dsPre.push(im)}catch{}}
-const JOBS=[{"n": 1, "name": "전사", "sub": "⚔ Warrior", "growth": "STR ★★★★★ | CON ★★★★★\nDEX ★★☆ | INT ★ | WIS ★ | CHA ★", "color": "#FFD700", "desc": "수많은 고블린은 검을 쥔다. 그러나 검은 누구에게나 주인을 허락하지 않는다.\n\n전사는 싸움을 즐기는 존재가 아니다.\n끝까지 쓰러지지 않는 자. 동료보다 먼저 앞으로 걷는 자.\n\n\"네 피가 대지를 적신다면, 그곳이 곧 부족의 성벽이 되리라.\"", "master": "ALL MASTER → 【IV - The Emperor】", "asset": "J01.png", "id": "warrior", "stats": "S13 D10 C13 I9 W9 Ch8 | HP60", "hidden": [["High Warrior + Guardman", "Juggernaut"], ["Guardman + Swordsman", "Royal Guardian"], ["High Warrior + Swordsman", "Blade Warlord"]], "cols": [["Power", "#e8c65a", ["High Warrior", "Veteran", "Champion", "Dread Champion", "Titan", "Avatar of War"], "【XI - Strength】"], ["Defense", "#6a9fd8", ["Guardman", "Shield Bearer", "Fortress Knight", "Iron Bastion", "Aegis Lord", "Living Fortress"], "【VII - Chariot】"], ["Sword", "#e86a6a", ["Swordsman", "Duelist", "Blade Master", "Sword Saint", "Void Edge", "Fate Breaker"], "【X - Wheel of Fortune】"]], "arcana": "【IV - The Emperor】"}, {"n": 2, "name": "마법사", "sub": "🔮 Mage", "growth": "INT ★★★★★ | WIS ★★★★\nDEX ★★ | CON ★★ | CHA ★★ | STR -", "color": "#E53935", "desc": "모든 고블린이 불을 피울 수는 있다.\n하지만 불이 스스로 피어오르게 만드는 것은 선택받은 자뿐이다.\n\n마법사는 주문을 외우는 존재가 아니다.\n세상이 잊은 언어를 기억하는 존재이다.\n\n\"별은 너에게 말을 걸지 않는다. 그러나 언젠가, 너는 별에게 대답하게 될 것이다.\"", "master": "ALL MASTER → 【XXI - The World】", "asset": "J02.png", "id": "mage", "stats": "S8 D9 C9 I14 W12 Ch10 | HP39", "hidden": [["Elementalist + Warlock", "Chaos Mage"], ["Warlock + Shaman", "Witch Doctor"], ["Elementalist + Shaman", "Spirit Sage"]], "cols": [["Element", "#ff6b35", ["Elementalist", "Flame Sage", "Storm Caller", "Arc Mage", "Grand Magus", "Elemental Lord"], "【I - The Magician】"], ["Curse", "#9c27b0", ["Warlock", "Hex Master", "Soul Binder", "Abyss Caster", "Demon Scholar", "Void Prophet"], "【XVI - The Tower】"], ["Spirit", "#4caf50", ["Shaman", "Spirit Walker", "Totem Master", "Ancestor Speaker", "Great Shaman", "World Shaman"], "【IX - The Hermit】"]], "arcana": "【XXI - The World】"}, {"n": 3, "name": "궁수", "sub": "🏹 Crossbowman", "growth": "DEX ★★★★★ | STR ★★★\nCON ★★ | INT ★★ | WIS ★★ | CHA ★", "color": "#9C27B0", "desc": "궁수는 하늘을 본다.\n석궁수는 적의 눈을 본다.\n\n한 발. 단 한 발이면 충분하다.\n누군가는 그것을 비겁하다 말하지만, 살아남은 자는 언제나 두 번째 화살을 장전한다.\n\n\"가장 먼 곳을 보는 눈이, 가장 가까운 죽음을 만든다.\"", "master": "ALL MASTER → 【XVII - The Star】", "asset": "J03.png", "id": "crossbow", "stats": "S12 D13 C10 I9 W9 Ch9 | HP48", "hidden": [["Sniper + Repeater", "Death Shooter"], ["Repeater + Engineer", "Siege Master"], ["Sniper + Engineer", "Hunter General"]], "cols": [["Sniper", "#ffd54f", ["Marksman", "Deadeye", "Eagle Eye", "Silent Killer", "One Shot"], "【XIX - The Sun】"], ["Repeater", "#ef5350", ["Repeater", "Rapid Shooter", "Bolt Storm", "Suppression Master", "Iron Rain"], "【VIII - Justice】"], ["Engineer", "#78909c", ["Siege Engineer", "Trap Master", "Ballista Master", "Fortress Breaker", "Iron Architect"], "【XVIII - The Moon】"]], "arcana": "【XVII - The Star】"}, {"n": 4, "name": "광대", "sub": "🎭 Jester", "growth": "DEX ★★★★ | CHA ★★★★\nINT ★★★ | WIS ★★ | CON ★ | STR ★", "color": "#1A237E", "desc": "광대는 웃긴다.\n하지만 웃음은 칼보다 깊게 파고든다.\n\n진실은 농담 속에 숨고, 죽음은 박수갈채와 함께 찾아온다.\n\n\"세상이 웃는 동안, 너는 이미 승리했다.\"", "master": "ALL MASTER → 【0 - The Fool】", "asset": "J04.png", "id": "jester", "stats": "S10 D13 C10 I9 W10 Ch10 | HP48", "hidden": [["Actor + Deceiver", "Faceless One"], ["Actor + Entertainer", "Carnival King"], ["Deceiver + Entertainer", "Puppet Master"]], "cols": [["Actor\n(연기자)", "#7e57c2", ["Stage Actor", "Master Actor", "Thousand Faces", "Perfect Impersonator", "Living Mask"], "【XIV - Temperance】"], ["Deceiver\n(기만자)", "#e53935", ["Swindler", "Con Artist", "Master Deceiver", "Lord of Lies", "Prince of Deception"], "【XV - The Devil】"], ["Entertainer\n(흥행사)", "#ffa726", ["Bard", "Ringmaster", "Festival Master", "Idol", "King of Entertainment"], "【VI - The Lovers】"]], "arcana": "【0 - The Fool】"}, {"n": 5, "name": "지휘관", "sub": "👑 Commander", "growth": "CHA ★★★★★ | WIS ★★★★\nSTR ★★★ | CON ★★★ | INT ★★★ | DEX ★★", "color": "#2E7D32", "desc": "깃발은 싸우지 않는다.\n그러나 모두가 깃발을 따라 죽는다.\n\n지휘란 명령이 아니다. 희망을 믿게 만드는 일이다.\n\n\"가장 높은 곳에 선 자는 가장 먼저 화살을 맞는다.\"", "master": "ALL MASTER → 【III - The Empress】", "asset": "J05.png", "id": "commander", "stats": "S11 D9 C11 I10 W10 Ch11 | HP57", "hidden": [["Chief + Commander", "Supreme Chief"], ["Commander + King", "King General"], ["Chief + King", "Great King"]], "cols": [["Tribal Chief", "#8d6e63", ["Goblin Chief", "Great Chief", "Chieftain", "High Chieftain", "Goblin Lord"], "【V - Hierophant】"], ["Military", "#b71c1c", ["Captain", "Commander", "Marshal", "Grand Marshal", "Warlord"], "【King of Swords】"], ["Royal", "#c9a84c", ["Noble Goblin", "Prince", "Crown Prince", "Regent", "Goblin King"], "【King of Pentacles】"]], "arcana": "【III - The Empress】"}, {"n": 6, "name": "평화주의자", "sub": "☮ Pacifist", "growth": "CHA ★ | WIS ★ | INT ★\nDEX ★ | CON ★ | STR -", "color": "#EF6C00", "desc": "그는 싸우지 않는다. 칼도 들지 않는다.\n언제나 웃는다. 언제나 양보한다.\n\n그리고 전쟁이 끝났을 때, 마지막까지 살아남아 있는 것은 언제나 그였다.\n\n\"가장 순한 양이, 가장 오래 늑대를 길들인다.\"", "master": "ALL MASTER → 【XX - Judgement】", "asset": "J06.png", "id": "pacifist", "stats": "S9 D9 C10 I11 W13 Ch10 | HP48", "hidden": [["Agitator + False Saint", "Silver Tongue"], ["False Saint + Cult Leader", "False Savior"], ["Agitator + Cult Leader", "Kingmaker"]], "cols": [["Agitator\n(선동가)", "#e53935", ["Demagogue", "Firebrand", "Voice of Revolt", "Master Agitator", "Harbinger of Chaos"], "【Knight of Swords】"], ["False Saint\n(거짓 성자)", "#e8c65a", ["Blessed One", "Miracle Worker", "Living Saint", "Holy Icon", "Divine Fraud"], "【II - High Priestess】"], ["Cult Leader\n(사이비 교주)", "#7e57c2", ["Apostle", "Prophet", "False Messiah", "Living God", "One True Faith"], "【XII - The Hanged Man】"]], "arcana": "【XX - Judgement】"}, {"n": 7, "name": "영웅", "desc": "영웅은 가장 강한 자가 아니다.\n가장 오래 살아남은 자도 아니다.\n모두가 포기한 길을, 끝까지 걸어간 자이다.\n\n그래서 카드에는 얼굴이 없다. 오직 등을 보일 뿐.\n\n\"운명은 선택받은 자를 만들지 않는다. 선택한 자를 운명이라 부른다.\"", "sub": "⭐ Hero", "growth": "STR ★★★ | DEX ★★★ | CON ★★★\nINT ★★★ | WIS ★★★ | CHA ★★★", "color": "#1565C0", "arcana": "【XIII - Death】→【King of Wands】", "hiddenTitle": "특수 전직 (Hero Hidden)", "master": "King of Heroes → 【King of Wands】", "asset": "J07.png", "id": "hero", "stats": "S13 D13 C13 I12 W12 Ch13 | HP67", "hidden": [["Hero + Warrior", "Brave King"], ["Hero + Mage", "Spellblade"], ["Hero + Commander", "King of Heroes"]], "cols": [["Hero Path", "#1565c0", ["Fake Hero", "Dark Hero", "Demon Hero", "Hero of Ruin", "Hero of the Abyss", "The Hero"], "【XIII - Death】"]], "masterSub": "운명조차 예측하지 못한 존재."}];
+const JOBS=[{"n": 1, "name": "전사", "sub": "⚔ Warrior", "growth": "STR ★★★★★ | CON ★★★★★\nDEX ★★☆ | INT ★ | WIS ★ | CHA ★", "color": "#FFD700", "desc": "수많은 고블린은 검을 쥔다. 그러나 검은 누구에게나 주인을 허락하지 않는다.\n\n전사는 싸움을 즐기는 존재가 아니다.\n끝까지 쓰러지지 않는 자. 동료보다 먼저 앞으로 걷는 자.\n\n\"네 피가 대지를 적신다면, 그곳이 곧 부족의 성벽이 되리라.\"", "master": "ALL MASTER → 【IV - The Emperor】", "asset": "J01.png", "id": "warrior", "stats": "S13 D10 C13 I9 W9 Ch8 | HP60", "hidden": [["High Warrior + Guardman", "Juggernaut"], ["Guardman + Swordsman", "Royal Guardian"], ["High Warrior + Swordsman", "Blade Warlord"]], "cols": [["Power", "#e8c65a", ["High Warrior", "Veteran", "Champion", "Dread Champion", "Titan", "Avatar of War"], "【XI - Strength】"], ["Defense", "#6a9fd8", ["Guardman", "Shield Bearer", "Fortress Knight", "Iron Bastion", "Aegis Lord", "Living Fortress"], "【VII - Chariot】"], ["Sword", "#e86a6a", ["Swordsman", "Duelist", "Blade Master", "Sword Saint", "Void Edge", "Fate Breaker"], "【X - Wheel of Fortune】"]], "arcana": "【IV - The Emperor】"}, {"n": 2, "name": "마법사", "sub": "🔮 Mage", "growth": "INT ★★★★★ | WIS ★★★★\nDEX ★★ | CON ★★ | CHA ★★ | STR -", "color": "#E53935", "desc": "모든 고블린이 불을 피울 수는 있다.\n하지만 불이 스스로 피어오르게 만드는 것은 선택받은 자뿐이다.\n\n마법사는 주문을 외우는 존재가 아니다.\n세상이 잊은 언어를 기억하는 존재이다.\n\n\"별은 너에게 말을 걸지 않는다. 그러나 언젠가, 너는 별에게 대답하게 될 것이다.\"", "master": "ALL MASTER → 【XXI - The World】", "asset": "J02.png", "id": "mage", "stats": "S8 D9 C9 I14 W12 Ch10 | HP39", "hidden": [["Elementalist + Warlock", "Chaos Mage"], ["Warlock + Shaman", "Witch Doctor"], ["Elementalist + Shaman", "Spirit Sage"]], "cols": [["Element", "#ff6b35", ["Elementalist", "Flame Sage", "Storm Caller", "Arc Mage", "Grand Magus", "Elemental Lord"], "【I - The Magician】"], ["Curse", "#9c27b0", ["Warlock", "Hex Master", "Soul Binder", "Abyss Caster", "Demon Scholar", "Void Prophet"], "【XVI - The Tower】"], ["Spirit", "#4caf50", ["Shaman", "Spirit Walker", "Totem Master", "Ancestor Speaker", "Great Shaman", "World Shaman"], "【IX - The Hermit】"]], "arcana": "【XXI - The World】"}, {"n": 3, "name": "궁수", "sub": "🏹 Crossbowman", "growth": "DEX ★★★★★ | STR ★★★\nCON ★★ | INT ★★ | WIS ★★ | CHA ★", "color": "#9C27B0", "desc": "궁수는 하늘을 본다.\n석궁수는 적의 눈을 본다.\n\n한 발. 단 한 발이면 충분하다.\n누군가는 그것을 비겁하다 말하지만, 살아남은 자는 언제나 두 번째 화살을 장전한다.\n\n\"가장 먼 곳을 보는 눈이, 가장 가까운 죽음을 만든다.\"", "master": "ALL MASTER → 【XVII - The Star】", "asset": "J03.png", "id": "crossbow", "stats": "S12 D13 C10 I9 W9 Ch9 | HP48", "hidden": [["Sniper + Repeater", "Death Shooter"], ["Repeater + Engineer", "Siege Master"], ["Sniper + Engineer", "Hunter General"]], "cols": [["Sniper", "#ffd54f", ["Marksman", "Deadeye", "Eagle Eye", "Silent Killer", "One Shot"], "【XIX - The Sun】"], ["Repeater", "#ef5350", ["Repeater", "Rapid Shooter", "Bolt Storm", "Suppression Master", "Iron Rain"], "【VIII - Justice】"], ["Engineer", "#78909c", ["Siege Engineer", "Trap Master", "Ballista Master", "Fortress Breaker", "Iron Architect"], "【XVIII - The Moon】"]], "arcana": "【XVII - The Star】"}, {"n": 4, "name": "광대", "sub": "🎭 Jester", "growth": "DEX ★★★★ | CHA ★★★★\nINT ★★★ | WIS ★★ | CON ★ | STR ★", "color": "#1A237E", "desc": "광대는 웃긴다.\n하지만 웃음은 칼보다 깊게 파고든다.\n\n진실은 농담 속에 숨고, 죽음은 박수갈채와 함께 찾아온다.\n\n\"세상이 웃는 동안, 너는 이미 승리했다.\"", "master": "ALL MASTER → 【0 - The Fool】", "asset": "J04.png", "id": "jester", "stats": "S10 D13 C10 I9 W10 Ch10 | HP48", "hidden": [["Actor + Deceiver", "Faceless One"], ["Actor + Entertainer", "Carnival King"], ["Deceiver + Entertainer", "Puppet Master"]], "cols": [["Actor\n(연기자)", "#7e57c2", ["Stage Actor", "Master Actor", "Thousand Faces", "Perfect Impersonator", "Living Mask"], "【XIV - Temperance】"], ["Deceiver\n(기만자)", "#e53935", ["Swindler", "Con Artist", "Master Deceiver", "Lord of Lies", "Prince of Deception"], "【XV - The Devil】"], ["Entertainer\n(흥행사)", "#ffa726", ["Bard", "Ringmaster", "Festival Master", "Idol", "King of Entertainment"], "【VI - The Lovers】"]], "arcana": "【0 - The Fool】"}, {"n": 5, "name": "지휘관", "sub": "👑 Commander", "growth": "CHA ★★★★★ | WIS ★★★★\nSTR ★★★ | CON ★★★ | INT ★★★ | DEX ★★", "color": "#2E7D32", "desc": "깃발은 싸우지 않는다.\n그러나 모두가 깃발을 따라 죽는다.\n\n지휘란 명령이 아니다. 희망을 믿게 만드는 일이다.\n\n\"가장 높은 곳에 선 자는 가장 먼저 화살을 맞는다.\"", "master": "ALL MASTER → 【III - The Empress】", "asset": "J05.png", "id": "commander", "stats": "S11 D9 C11 I10 W10 Ch11 | HP57", "hidden": [["Chief + Commander", "Supreme Chief"], ["Commander + King", "King General"], ["Chief + King", "Great King"]], "cols": [["Tribal Chief", "#8d6e63", ["Goblin Chief", "Great Chief", "Chieftain", "High Chieftain", "Goblin Lord"], "【V - Hierophant】"], ["Military", "#b71c1c", ["Captain", "Commander", "Marshal", "Grand Marshal", "Warlord"], "【King of Swords】"], ["Royal", "#c9a84c", ["Noble Goblin", "Prince", "Crown Prince", "Regent", "Goblin King"], "【King of Pentacles】"]], "arcana": "【III - The Empress】"}, {"n": 6, "name": "평화주의자", "sub": "☮ Pacifist", "growth": "CHA ★ | WIS ★ | INT ★\nDEX ★ | CON ★ | STR -", "color": "#EF6C00", "desc": "그는 싸우지 않는다. 칼도 들지 않는다.\n언제나 웃는다. 언제나 양보한다.\n\n그리고 전쟁이 끝났을 때, 마지막까지 살아남아 있는 것은 언제나 그였다.\n\n\"가장 순한 양이, 가장 오래 늑대를 길들인다.\"", "master": "ALL MASTER → 【XX - Judgement】", "asset": "J06.png", "id": "pacifist", "stats": "S9 D9 C10 I11 W13 Ch10 | HP48", "hidden": [["Agitator + False Saint", "Silver Tongue"], ["False Saint + Cult Leader", "False Savior"], ["Agitator + Cult Leader", "Kingmaker"]], "cols": [["Agitator\n(선동가)", "#e53935", ["Demagogue", "Firebrand", "Voice of Revolt", "Master Agitator", "Harbinger of Chaos"], "【Knight of Swords】"], ["False Saint\n(거짓 성자)", "#e8c65a", ["Blessed One", "Miracle Worker", "Living Saint", "Holy Icon", "Divine Fraud"], "【II - High Priestess】"], ["Cult Leader\n(사이비 교주)", "#7e57c2", ["Apostle", "Prophet", "False Messiah", "Living God", "One True Faith"], "【XII - The Hanged Man】"]], "arcana": "【XX - Judgement】"}, {"n": 7, "name": "영웅", "desc": "영웅은 가장 강한 자가 아니다.\n가장 오래 살아남은 자도 아니다.\n모두가 포기한 길을, 끝까지 걸어간 자이다.\n\n그래서 카드에는 얼굴이 없다. 오직 등을 보일 뿐.\n\n\"운명은 선택받은 자를 만들지 않는다. 선택한 자를 운명이라 부른다.\"", "sub": "⭐ Hero", "growth": "STR ★★★ | DEX ★★★ | CON ★★★\nINT ★★★ | WIS ★★★ | CHA ★★★", "color": "#1565C0", "arcana": "【XIII - Death】→【King of Wands】", "hiddenTitle": "특수 전직 (Hero Hidden)", "master": "King of Heroes → 【King of Wands】", "asset": "J07.png", "id": "hero", "stats": "S13 D13 C13 I12 W12 Ch13 | HP67", "hidden": [["Hero + Warrior", "Brave King"], ["Hero + Mage", "Spellblade"], ["Hero + Commander", "King of Heroes"]], "cols": [["Hero Path", "#1565c0", ["Fake Hero", "Dark Hero", "Demon Hero", "Hero of Ruin", "Hero of the Abyss", "The Hero"], "【XIII - Death】"]], "masterSub": "운명조차 예측하지 못한 존재."}, {"n": 8, "name": "외신의 축복자", "sub": "👁 Outsider", "growth": "WIS ★★★★★ | CHA ★★★★\nCON ★★★ | INT ★★ | DEX ★★ | STR ★", "color": "#8B1E3F", "desc": "별 너머에서 무언가가 그를 보았다.\n그것은 신이 아니다. 신들이 이름 부르기를 두려워하는 무언가다.\n축복은 선물이 아니다. 표식이다.\n\n\"숲의 검은 양이여, 천의 새끼를 거느린 이여—\"", "master": "", "asset": "J08.png", "id": "outer", "stats": "S5 D5 C5 I5 W20 Ch20 | HP60", "hidden": [], "cols": [["Black Goat\n(검은 양)", "#8B1E3F", ["Lamb of the Woods", "Herald of the Goat", "Vessel of the Mother", "Black Shepherd", "Avatar of the Black Goat", "Mother of a Thousand Young"], "【Queen of Pentacles】"]], "arcana": "【Queen of Pentacles】", "hide": true}];
 const DS_CSS_SRC=`
 .P-root{position:fixed;inset:0;z-index:100000;background:#05000c;color:#e8d5ff;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;user-select:none;-webkit-user-select:none;overflow:hidden}
 .P-root *{box-sizing:border-box}
@@ -1669,10 +1730,40 @@ const DS_CSS_SRC=`
 .P-mas small{display:block;font-weight:400;color:#9a7bc7;font-size:11px;margin-top:4px}
 .P-say{position:absolute;left:50%;top:5%;z-index:40;width:max-content;max-width:calc(var(--F)*.92);text-align:center;font:500 clamp(14px,calc(var(--F)*.03),20px)/1.75 'Noto Serif KR',serif;letter-spacing:.03em;color:#dcbcff;text-shadow:0 0 10px rgba(160,90,255,.9),0 0 28px rgba(110,40,200,.65),0 2px 4px #000;pointer-events:none;word-break:keep-all;animation:Psay 6s ease forwards}
 @keyframes Psay{0%{opacity:0;transform:translate(-50%,10px);filter:blur(5px)}14%{opacity:1;transform:translate(-50%,0);filter:blur(0)}76%{opacity:1;transform:translate(-50%,0);filter:blur(0)}100%{opacity:0;transform:translate(-50%,-8px);filter:blur(4px)}}
+.P-tapz{position:absolute;top:50%;right:3%;width:calc(var(--w)*.46);height:calc(var(--w)*.69);transform:translateY(-50%);z-index:6;border:0;padding:0;background:transparent;cursor:default;-webkit-tap-highlight-color:transparent}
+.P-say.P-say-t{animation:Ptsay .35s ease forwards}.P-say.P-say-r{color:#ff4646;font-weight:700;text-shadow:0 0 10px rgba(255,0,0,.9),0 0 26px rgba(160,0,0,.8),0 2px 4px #000;animation:Ptsay .35s ease forwards,Pshk .3s ease}
+@keyframes Ptsay{0%{opacity:0;transform:translate(-50%,6px);filter:blur(3px)}100%{opacity:1;transform:translate(-50%,0);filter:blur(0)}}
+.P-shk{animation:Pfshk .28s ease}
+@keyframes Pfshk{0%,100%{translate:0 0}25%{translate:calc(var(--k)*1px) calc(var(--k)*-.6px)}50%{translate:calc(var(--k)*-1px) calc(var(--k)*.5px)}75%{translate:calc(var(--k)*.6px) calc(var(--k)*.4px)}}
+@keyframes Pshk{0%,100%{margin-left:0}30%{margin-left:-5px}60%{margin-left:5px}}
+.P-crk{position:absolute;inset:0;z-index:30;pointer-events:none;overflow:hidden}
+.P-crk img{position:absolute;max-width:none;transform:translate(-50%,-50%)}
+.P-crk .P-crkd{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(40,0,8,.65))}
+.P-shd{position:absolute;inset:0;z-index:0;pointer-events:none}
+.P-sh{position:absolute;inset:0;background:#0a0014 center top/cover no-repeat}
+.P-fall .P-sh{animation:Pfall 1.7s cubic-bezier(.5,0,.9,.6) forwards}
+@keyframes Pfall{to{transform:translate(var(--dx),calc(var(--F)*1.7)) rotate(var(--r));opacity:.1}}
+.P-fall .P-stage,.P-fall .P-dim,.P-fall .P-bottom{transition:opacity .5s;opacity:0}
+.P-fall .P-crk{transition:opacity .6s;opacity:0}
+.P-dark{background:radial-gradient(ellipse at 50% 45%,#2a0612 0%,#0b0206 55%,#000 100%)!important}
+.P-bleat{position:absolute;left:0;right:0;top:44%;z-index:40;text-align:center;color:#c33;font:500 clamp(18px,calc(var(--F)*.05),28px) 'Noto Serif KR',serif;letter-spacing:.2em;text-shadow:0 0 14px #800;opacity:0;animation:Pbl 2.2s ease 1.7s forwards}
+@keyframes Pbl{20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.P-say.P-say-m{color:#ff9aa6;text-shadow:0 0 10px rgba(200,20,50,.9),0 0 28px rgba(120,0,20,.75),0 2px 4px #000;animation:Psay 10s ease forwards;opacity:0}
+.P-say.P-say-late{animation-delay:2.6s}
+.P-say-m em{display:block;margin-top:6px;font-size:.8em;font-style:italic;color:#b7a6b0;text-shadow:0 2px 4px #000}
+.P-say-m small{display:block;font-size:.72em;letter-spacing:.35em;color:#c9707c;margin-bottom:4px}
+.P-alt{position:absolute;inset:0;opacity:0;transition:opacity .45s}
+.P-card:hover .P-alt,.P-card:active .P-alt{opacity:1}
+.P-front{position:absolute}
+.P-e-hid{animation:Phidin 3.2s cubic-bezier(.2,.7,.25,1) both}
+.P-e-hid .P-inner{animation:Phidsp 3.2s cubic-bezier(.2,.7,.25,1) both}
+@keyframes Phidin{0%{transform:translate(-50%,-50%) scale(.15);opacity:0;filter:drop-shadow(0 0 0 #f00)}12%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1;filter:drop-shadow(0 0 22px rgba(200,20,40,.7))}}
+@keyframes Phidsp{0%{transform:rotateY(0)}100%{transform:rotateY(1980deg)}}
 .P-msg{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;width:max-content;max-width:92vw;text-align:center;line-height:1.6;padding:10px 18px;border-radius:8px;background:#2a0d0d;border:1px solid #c44;color:#fbb;font-size:13px}
 @media(max-width:600px){.P-modal{flex-direction:column;padding:14px}.P-ml{flex:none;text-align:center}.P-ml img{height:34vh;width:auto;margin:0 auto}}
 `;
 // 카드가 앞으로 올 때 그녀가 하는 한마디 (보라색 글자, 떠올랐다 사라짐)
+const DS_SAY_MOM="여덟 번째 카드, 외신의 축복. 숲의 검은 양이 고른 아이만 이 길을 걷는단다. 몸은 약하지만, 정신은 별 너머에 닿지...",DS_SAY_MOM2="(두 사람의 목소리가 들리는 것 같다)";
 const DS_SAY={"warrior": "검을 쥐려고? 끝까지 쓰러지지 않는 자… 네 피가 곧 성벽이 되는 길이야.", "mage": "세상이 잊은 언어를 기억하는 길이네. 언젠가 별에게 대답하게 될지도 몰라.", "crossbow": "한 발이면 충분하대. 비겁하다고? 살아남은 쪽이 이기는 거야.", "jester": "후후, 광대라니. 웃음 뒤에 칼을 숨기는 길이야. 세상이 웃는 동안 넌 이미 이긴 거고.", "commander": "깃발이구나. 모두가 널 따라 죽게 될 거야. 가장 높은 곳엔 화살이 먼저 날아오고.", "pacifist": "싸우지 않는 길? 재밌네. 웃으면서 양보하는 애가… 마지막엔 꼭 살아남더라.", "hero": "어머, 얼굴 없는 카드를 집었네. 모두가 포기한 길을 끝까지 걷겠다고?"};
 const DS_CSS=DS_CSS_SRC.replace(/\.P-/g,'.dsx-')+DS_CSS_SRC.replace(/\.P-/g,'.x-risu-dsx-').replace(/@keyframes [\s\S]*?\}\}/g,'');
 const dsEsc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1680,22 +1771,57 @@ let ds=null; // {root,view,assets,mode,idx,detail,path,anim}
 const A=k=>IMG_BASE?ghv(IMG_BASE+(IMG_FILES[k]||'')):(ds&&ds.assets[k]?ds.assets[k]:'');
 function dsImg(k,cls){return `<img class="${cls||''}" src="${dsEsc(A(k))}" alt="">`}
 
+const dsList=()=>JOBS.filter(j=>!j.hide||(ds&&ds.outer));
+const DS_TAP={5:'…응? 거긴 아무것도 없어.',6:'카드는 일곱 장뿐이야. 세어 봐.',7:'탁자가 좀 낡았지? 그냥 흠집이야.',8:'그만 만지고 고르기나 해.',9:'후후, 꽤 끈질기네. 그래도 없는 건 없는 거야.',
+ 10:'그만두라고 했잖아.',11:'거기서 손 떼.',12:'너는 그게 뭔지 몰라.',13:'듣고 있어? 그만해!',14:'그건 카드가 아니야. 문이야.',15:'열면… 다시는 닫을 수 없어!',
+ 16:'제발… 부탁이야. 다른 걸 골라.',17:'나도 그걸 본 적 있어. 그래서 이렇게 된 거야.',18:'왜 하필 너는…!',19:'……',20:'…좋아. 마음대로 해. 대신 나는 경고했어.'};
+const DS_TAP_RED=[10,11,12,13,14,15,18];
+// 금: 누를 때마다 새 충격점, 먼저 생긴 금은 점점 커짐. 19번부터 화면 전체가 조각으로 갈라짐
+const DS_CRK=[[82,50,0],[62,28,40],[28,64,-30],[72,80,75],[20,22,120],[46,48,200],[90,14,-80],[12,88,160],[55,10,15],[36,94,-120],[50,36,260]];
+function dsCrack(t){
+ if(t<10)return '';
+ const k=Math.min(11,t-9);let h='<div class="dsx-crk">';
+ for(let j=0;j<k;j++){const [x,y,r]=DS_CRK[j],age=k-j;let w=(j===0?70:45)+age*(j===0?14:10);if(t>=19)w*=1.35;if(t>=20)w*=1.15;
+  h+=`<img src="${dsEsc(A('CRK'))}" style="left:${x}%;top:${y}%;width:${Math.round(w)}%;rotate:${r}deg;opacity:${Math.min(1,.55+age*.1).toFixed(2)}" alt="">`}
+ if(t>=16)h+=`<div class="dsx-crkd" style="opacity:${t>=19?1:t>=18?.7:.4}"></div>`;
+ return h+'</div>';
+}
+function dsShards(lv){
+ // 바탕 그림을 삼각형 조각으로 잘라 살짝 어긋나게 (lv 1=19번 · 2=20번 · 3=떨어짐)
+ let seed=77;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ const cols=5,rows=8,pt=[];let h=`<div class="dsx-shd">`;
+ for(let y=0;y<=rows;y++){pt.push([]);for(let x=0;x<=cols;x++){const jx=(x>0&&x<cols)?(R()-.5)*.7:0,jy=(y>0&&y<rows)?(R()-.5)*.7:0;pt[y].push([(x+jx)/cols*100,(y+jy)/rows*100])}}
+ const bgi=`background-image:url('${dsEsc(A('A9'))}')`,m=lv===1?.6:1.8;
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const a=pt[y][x],b=pt[y][x+1],c=pt[y+1][x+1],d=pt[y+1][x];
+  for(const t of(R()<.5?[[a,b,c],[a,c,d]]:[[a,b,d],[b,c,d]])){const dx=R()-.5,dy=R()-.5,rr=R()-.5,br=R(),dl=R();
+   h+=`<div class="dsx-sh" style="${bgi};clip-path:polygon(${t.map(p=>p[0].toFixed(1)+'% '+p[1].toFixed(1)+'%').join(',')});transform:translate(${(dx*m).toFixed(2)}%,${(dy*m*.6).toFixed(2)}%)${lv>=2?` rotate(${(rr*3).toFixed(1)}deg)`:''};filter:brightness(${(lv>=2?.5+br*.6:.75+br*.4).toFixed(2)});animation-delay:${(dl*.5+y/rows*.4).toFixed(2)}s;--r:${(rr*140).toFixed(0)}deg;--dx:${(dx*120).toFixed(0)}px"></div>`}}
+ return h+'</div>';
+}
+function dsOuterKey(k){return 'dsx-outer:'+(k||'')}
 function dsHTML(){
  const s=ds;let h='<button class="dsx-x dsx-act-close">✕</button>';
  if(s.mode==='intro'){
   h+='<div class="dsx-frame">';for(let i=1;i<=9;i++)h+=`<img class="dsx-f" style="animation-delay:${(i-1)*.2}s" src="${dsEsc(A('A'+i))}" alt="">`;
   return h+'<button class="dsx-start dsx-act-reveal">REVEAL THE CARDS</button></div>';
  }
- const j=JOBS[s.idx-1],deck=`${dsImg('CB')}${dsImg('CB')}${dsImg('CB')}`;
- h+=`<div class="dsx-frame" style="background-image:url('${dsEsc(A('A9'))}')"><div class="dsx-dim"></div><div class="dsx-stage">`;
+ const j=dsList()[s.idx-1],deck=`${dsImg('CB')}${dsImg('CB')}${dsImg('CB')}`;
+ const dark=j.id==='outer'||s.fall,shk=s.taps>=10&&s.enter==='tap';
+ h+=`<div class="dsx-frame${dark?' dsx-dark':''}${shk?' dsx-shk':''}${s.fall?' dsx-fall':''}" style="${dark?'':`background-image:url('${dsEsc(A('A9'))}');`}--k:${s.taps>=10?3+s.taps/3:1.5}">`;
+ if(s.taps>=19&&j.id==='hero')h+=dsShards(s.fall?3:s.taps>=20?2:1);
+ h+=`<div class="dsx-dim"></div><div class="dsx-stage">`;
  if(s.idx>1)h+=`<button class="dsx-deck dsx-dl dsx-act-prev">${deck}</button>`;
- if(s.idx<JOBS.length)h+=`<button class="dsx-deck dsx-dr dsx-act-next">${deck}</button>`;
- if(s.ghost){const g=JOBS[s.ghost-1];h+=`<div class="dsx-ghost dsx-g-${s.enter}" style="--pc:${g.color}">${dsImg(g.asset.replace('.png',''))}</div>`}
- h+=`<div class="dsx-card dsx-act-detail${s.enter?' dsx-e-'+s.enter:''}" style="--cc:${j.color}"><div class="dsx-inner"><div class="dsx-back">${dsImg('CB')}</div><div class="dsx-front">${dsImg(j.asset.replace('.png',''))}</div></div></div>`;
- h+=`</div><div class="dsx-bottom"><div class="dsx-count">${s.idx} / ${JOBS.length}</div><div class="dsx-dots">`;
- for(let i=1;i<=JOBS.length;i++)h+=`<span class="${i===s.idx?'dsx-on':''}"></span>`;
+ if(s.idx<dsList().length)h+=`<button class="dsx-deck dsx-dr dsx-act-next">${deck}</button>`;
+ else if(j.id==='hero'&&!s.outer&&!s.fall&&s.taps<20)h+=`<button class="dsx-tapz dsx-act-tap" aria-label=""></button>`;
+ if(s.ghost){const g=dsList()[s.ghost-1];h+=`<div class="dsx-ghost dsx-g-${s.enter}" style="--pc:${g.color}">${dsImg(g.asset.replace('.png',''))}</div>`}
+ h+=`<div class="dsx-card dsx-act-detail${s.enter?' dsx-e-'+s.enter:''}" style="--cc:${j.color}"><div class="dsx-inner"><div class="dsx-back">${dsImg(j.id==='outer'?'CB8':'CB')}</div><div class="dsx-front">${dsImg(j.asset.replace('.png',''))}${j.id==='outer'?dsImg('J08X','dsx-alt'):''}</div></div></div>`;
+ h+=`</div><div class="dsx-bottom"><div class="dsx-count">${s.idx} / ${dsList().length}</div><div class="dsx-dots">`;
+ for(let i=1;i<=dsList().length;i++)h+=`<span class="${i===s.idx?'dsx-on':''}"></span>`;
  h+='</div><div class="dsx-hint">카드를 눌러 자세히 보기 · 양옆 카드 또는 밀어서 넘기기</div></div>';
- if(s.say&&DS_SAY[j.id])h+=`<div class="dsx-say">${dsEsc(DS_SAY[j.id])}</div>`;
+ if(s.taps>=5&&!s.fall&&j.id==='hero'&&DS_TAP[s.taps])h+=`<div class="dsx-say dsx-say-t${DS_TAP_RED.includes(s.taps)?' dsx-say-r':''}">${dsEsc(DS_TAP[s.taps])}</div>`;
+ else if(s.say&&j.id==='outer')h+=`<div class="dsx-say dsx-say-m${s.enter==='hid'?' dsx-say-late':''}"><small>— 어머니 —</small>${dsEsc(DS_SAY_MOM)}<em>${dsEsc(DS_SAY_MOM2)}</em></div>`;
+ else if(s.say&&DS_SAY[j.id])h+=`<div class="dsx-say">${dsEsc(DS_SAY[j.id])}</div>`;
+ if(j.id==='hero'&&!s.fall)h+=dsCrack(s.taps);
+ if(s.fall)h+='<div class="dsx-bleat">— 메에에… —</div>';
  h+='</div>';
  if(s.detail){
   h+=`<div class="dsx-ov"><div class="dsx-modal" style="--cc:${j.color}"><div class="dsx-ml">${dsImg(j.asset.replace('.png',''))}</div><div class="dsx-mr">
@@ -1708,8 +1834,10 @@ function dsHTML(){
  if(s.path){
   h+=`<div class="dsx-ov"><div class="dsx-path" style="--cc:${j.color}"><div class="dsx-ph"><b style="color:${j.color}">${dsEsc(j.name)} — CLASS PATH</b><button class="dsx-btn dsx-act-pathclose">✕</button></div><div class="dsx-pb"><div class="dsx-cols">`;
   for(const c of j.cols){h+=`<div class="dsx-col" style="--bc:${c[1]}"><div class="dsx-cn">${dsEsc(c[0])}</div>`;for(const n of c[2])h+=`<div class="dsx-node">${dsEsc(n)}</div><div class="dsx-ar">↓</div>`;h+=`<div class="dsx-fin">${dsEsc(c[3])}</div></div>`}
-  h+=`</div><div class="dsx-hid"><div class="dsx-ht">${dsEsc(j.hiddenTitle||'Hidden')}</div>`;for(const x of j.hidden)h+=`<div>${dsEsc(x[0])} = <b>${dsEsc(x[1])}</b></div>`;
-  h+=`<div class="dsx-mas">${dsEsc(j.master)}${j.masterSub?`<small>${dsEsc(j.masterSub)}</small>`:''}</div></div></div></div></div>`;
+  h+='</div>';
+  if(j.hidden.length||j.master){h+=`<div class="dsx-hid"><div class="dsx-ht">${dsEsc(j.hiddenTitle||'Hidden')}</div>`;for(const x of j.hidden)h+=`<div>${dsEsc(x[0])} = <b>${dsEsc(x[1])}</b></div>`;
+   h+=`<div class="dsx-mas">${dsEsc(j.master)}${j.masterSub?`<small>${dsEsc(j.masterSub)}</small>`:''}</div></div>`}
+  h+='</div></div></div>';
  }
  if(s.msg)h+=`<div class="dsx-msg">${dsEsc(s.msg)}</div>`;
  return h;
@@ -1734,10 +1862,19 @@ async function dsRender(){
  }
 }
 async function dsAct(a){
- const s=ds;if(!s)return;s.msg='';s.enter='';s.ghost=0;s.say=a==='reveal'||a==='next'||a==='prev';
+ const s=ds;if(!s)return;
+ if(s.fall&&a!=='close')return; // 깨지는 중엔 다른 입력 무시
+ s.msg='';s.enter='';s.ghost=0;s.say=a==='reveal'||a==='next'||a==='prev';
+ if(a!=='tap'&&a!=='close'&&s.taps<20)s.taps=0; // 다른 걸 누르면 처음부터
  if(a==='close')return dsClose();
+ if(a==='tap'){
+  if(s.outer||dsList()[s.idx-1].id!=='hero'||s.taps>=20)return;
+  s.taps++;s.enter='tap';
+  if(s.taps===20)dsShatter(s);
+  return dsRender();
+ }
  if(a==='reveal'){s.mode='cards';s.idx=1;s.enter='reveal'}
- else if(a==='next'&&s.idx<JOBS.length){s.ghost=s.idx;s.idx++;s.enter='next'}
+ else if(a==='next'&&s.idx<dsList().length){s.ghost=s.idx;s.idx++;s.enter='next'}
  else if(a==='prev'&&s.idx>1){s.ghost=s.idx;s.idx--;s.enter='prev'}
  else if(a==='detail')s.detail=true;
  else if(a==='back'){s.detail=false;s.path=false}
@@ -1747,7 +1884,7 @@ async function dsAct(a){
   if(dsBusy)return;dsBusy=true;
   // 저장 권한 확인 창이 이 화면 뒤에 가려지지 않도록, 저장하는 동안 화면을 잠시 숨김
   try{await s.root.setStyle('display','none')}catch{}
-  try{await dsSave(JOBS[s.idx-1]);dsBusy=false;await dsClose(true);introPlay().catch(e=>err('intro',e)).finally(()=>bgmStop().catch(()=>{}));return}
+  try{const pj=dsList()[s.idx-1];await dsSave(pj);dsBusy=false;await dsClose(true);introPlay(pj.id).catch(e=>err('intro',e)).finally(()=>bgmStop().catch(()=>{}));return}
   catch(e){s.msg=String(e?.message||e);err('ds save',e)}
   dsBusy=false;if(ds!==s)return;
   try{await s.root.setStyle('display','')}catch{}
@@ -1755,13 +1892,24 @@ async function dsAct(a){
  else return;
  await dsRender();
 }
+// 20번째: 대사 → 화면이 깨져 떨어짐 → 양 울음소리 → 어둠 속에서 8번째 카드가 돌며 나타남
+function dsShatter(s){
+ const ok=()=>ds===s;
+ setTimeout(()=>{if(!ok())return;s.fall=true;s.enter='';bgmStop().catch(()=>{});dsRender()},2600);
+ // 다시 그리면 떨어지던 조각이 처음부터 다시 떨어지므로, 울음소리는 소리만 냄 (글자는 CSS 지연으로 나타남)
+ setTimeout(()=>{if(!ok())return;
+  try{if(GH_BASE){const au=new Audio(ghv(GH_BASE+'sfx/bleat.mp3'));au.volume=.9;au.play().catch(()=>{})}}catch{}},4300);
+ setTimeout(()=>{if(!ok())return;s.fall=false;s.outer=true;s.taps=0;s.idx=dsList().length;s.enter='hid';s.say=true;
+  try{localStorage.setItem(dsOuterKey(s.key),'1')}catch{}
+  dsRender()},6600);
+}
 async function dsSave(j){
  const ci=await host.getCurrentCharacterIndex(),ch=await host.getCurrentChatIndex();
  const chat=await host.getChatFromIndex(ci,ch);if(!chat)throw Error('채팅을 찾지 못했어요');
  if(chat.isStreaming)throw Error('AI 답변이 끝난 뒤 골라 주세요');
  const next=JSON.parse(JSON.stringify(chat));next.scriptstate=next.scriptstate||{};
  next.scriptstate['$ds_pick']=j.id;next.scriptstate['$JOB']=String(j.n);
- for(let k=1;k<=7;k++)next.scriptstate['$J0'+k]=k===j.n?'1':'';
+ for(let k=1;k<=8;k++)next.scriptstate['$J0'+k]=k===j.n?'1':'';
  await host.setChatToIndex(ci,ch,next);
  const chk=await host.getChatFromIndex(ci,ch);
  if(!chk||!chk.scriptstate||chk.scriptstate['$ds_pick']!==j.id)throw Error('저장 권한이 거부된 상태예요. RisuAI를 새로고침한 뒤 다시 고르고, Confirm 창에서 YES를 눌러 주세요');
@@ -1782,7 +1930,8 @@ async function dsOpen(){
  const style=await doc.createElement('style');await style.setTextContent(DS_CSS);await root.appendChild(style);
  const view=await doc.createElement('div');await root.appendChild(view);
  await body.appendChild(root);release(body);
- ds={root,view,assets,mode:'intro',idx:1,detail:false,path:false,enter:'',ghost:0,msg:''};
+ const key=await chatKey();let outer=false;try{outer=localStorage.getItem(dsOuterKey(key))==='1'}catch{}
+ ds={root,view,assets,mode:'intro',idx:1,detail:false,path:false,enter:'',ghost:0,msg:'',taps:0,key,outer};
  await dsRender();
 }
 let dsLastReq=null,dsLastChat=null;
