@@ -1,7 +1,7 @@
 //@name demon_fx
-//@display-name 둥지 시스템 연출 + 운명선택 v1.55.3
+//@display-name 둥지 시스템 연출 + 운명선택 v1.55.4
 //@api 3.0
-//@version 1.55.3
+//@version 1.55.4
 //@update-url https://raw.githubusercontent.com/nially7/Goblin-nest/main/demon_fx_plugin.js
 (async()=>{
 'use strict';
@@ -422,23 +422,29 @@ body{font-family:Georgia,'Noto Serif KR',serif;color:#e8dcc8}
 @keyframes sbiFlip{to{transform:rotateY(-168deg)}}
 @keyframes sbiPg{to{opacity:1}}
 @keyframes sbiOut{to{opacity:0;transform:scale(1.06)}}
-/* 포로 반란: 일러스트(event/revolt.webp) + 화면이 흔들리며 우당탕탕 → 제목 */
-.rv{background:#120606;overflow:hidden;animation:rvBg 5.2s ease forwards}
-@keyframes rvBg{0%{opacity:0}6%{opacity:1}88%{opacity:1}100%{opacity:0}}
-.rv-im{position:absolute;inset:-4%;background:center/cover no-repeat;filter:saturate(1.1) brightness(.9);animation:rvShake .18s linear 14 .5s,rvZoom 5.2s ease forwards}
-@keyframes rvZoom{from{transform:scale(1.08)}to{transform:scale(1)}}
-@keyframes rvShake{0%{translate:0 0}25%{translate:-9px 5px}50%{translate:8px -6px}75%{translate:-5px -4px}100%{translate:0 0}}
-.rv-fl{position:absolute;inset:0;background:#ff2a12;mix-blend-mode:overlay;opacity:0;animation:rvFlash .5s steps(2) 5 .5s}
-@keyframes rvFlash{50%{opacity:.55}}
-.rv-vg{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.85))}
+/* 포로 반란: ① 어두운 화면에서 우당탕탕(흔들림·파편·효과음 글자) → ② 반란 그림 한 장 → ③ "포로 반란!" → 사라짐 (총 5초) */
+.rv{background:#0d0404;overflow:hidden;animation:rvBg 5s ease forwards}
+@keyframes rvBg{0%{opacity:0}4%{opacity:1}86%{opacity:1}100%{opacity:0}}
+.rv-a{position:absolute;inset:0;animation:rvShake .16s linear 11 .1s,rvAOut .3s ease 1.75s forwards}
+@keyframes rvAOut{to{opacity:0;visibility:hidden}}
+@keyframes rvShake{0%{translate:0 0}25%{translate:-10px 6px}50%{translate:9px -7px}75%{translate:-6px -4px}100%{translate:0 0}}
+.rv-fl{position:absolute;inset:0;background:#ff2a12;opacity:0;animation:rvFlash .36s steps(2) 5 .1s}
+@keyframes rvFlash{50%{opacity:.22}}
 .rv-db{position:absolute;top:-40px;width:var(--s);height:calc(var(--s) * .6);background:#5b3a22;border:2px solid #2b1a0e;border-radius:3px;opacity:0;animation:rvFall var(--d) cubic-bezier(.5,0,.8,1) var(--dl) forwards}
 @keyframes rvFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:1;transform:translateY(110vh) rotate(var(--r))}}
-.rv-bang{position:absolute;font:900 clamp(30px,9vw,64px)/1 'Noto Sans KR',sans-serif;color:#fff3c4;-webkit-text-stroke:3px #3a0d06;paint-order:stroke;text-shadow:0 6px 0 #3a0d06;opacity:0;transform:rotate(var(--r)) scale(.4);animation:rvBang .55s cubic-bezier(.3,1.6,.5,1) var(--dl) forwards}
+.rv-bang{position:absolute;font:900 clamp(30px,9vw,64px)/1 'Noto Sans KR',sans-serif;color:#fff3c4;-webkit-text-stroke:3px #3a0d06;paint-order:stroke;text-shadow:0 6px 0 #3a0d06;opacity:0;transform:rotate(var(--r)) scale(.4);animation:rvBang .4s cubic-bezier(.3,1.6,.5,1) var(--dl) forwards}
 @keyframes rvBang{to{opacity:1;transform:rotate(var(--r)) scale(1)}}
-.rv-tt{position:absolute;left:0;right:0;bottom:12%;text-align:center;opacity:0;animation:rvTt .6s ease 3s forwards}
-.rv-tt b{display:block;font:900 clamp(30px,8vw,56px)/1.1 'Noto Serif KR',serif;color:#ff5a3c;text-shadow:0 0 20px #ff2a1288,0 3px 0 #2a0703;letter-spacing:.08em}
+.rv-b{position:absolute;inset:0;opacity:0;animation:rvBIn .35s ease 1.8s forwards}
+@keyframes rvBIn{to{opacity:1}}
+.rv-im{position:absolute;inset:0;background:62% center/cover no-repeat;animation:rvZoom 3.2s ease-out 1.8s both}
+@keyframes rvZoom{from{transform:scale(1.12)}to{transform:scale(1)}}
+.rv-wf{position:absolute;inset:0;background:#fff;opacity:0;animation:rvW .5s ease 1.8s}
+@keyframes rvW{0%{opacity:.85}100%{opacity:0}}
+.rv-vg{position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent 45%),radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.6))}
+.rv-tt{position:absolute;left:0;right:0;bottom:10%;text-align:center;opacity:0;animation:rvTt .5s ease 2.6s forwards}
+.rv-tt b{display:block;font:900 clamp(34px,9vw,64px)/1.1 'Noto Serif KR',serif;color:#ff5a3c;text-shadow:0 0 20px #ff2a1288,0 3px 0 #2a0703;letter-spacing:.08em}
 .rv-tt small{display:block;margin-top:8px;font-size:clamp(13px,3.6vw,18px);color:#ffd9c8}
-@keyframes rvTt{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes rvTt{from{opacity:0;transform:translateY(20px) scale(1.1)}to{opacity:1;transform:none}}
 /* 회춘의 비약: 화면이 검게 → 핑크 약병이 기울어 약을 따름 → 핑크빛 + 글자 */
 .rj{background:#000;animation:ptIn 6.2s ease forwards}
 @keyframes ptIn{0%{background:rgba(0,0,0,0)}10%{background:#000}85%{background:#000}100%{background:rgba(0,0,0,0)}}
@@ -524,12 +530,13 @@ const FX={
   ${[[31,-20,3.9],[36,14,4.1],[28,-36,4.3],[39,30,4.0],[34,4,4.5]].map(([l,x,d])=>`<i class="pt-sp" style="left:${l}%;--x:${x}px;--d:${d}s"></i>`).join('')}
   <div class="pt-tx"><b>회춘의 비약</b><small>${esc(a)} — 전성기의 모습으로</small></div></div></div>`}),
  revolt:()=>{const im=GH_BASE?ghv(GH_BASE+'event/revolt.webp'):'';
-  const db=[[8,26,1.6,.6,320],[22,18,1.9,.9,-260],[37,30,1.4,.5,410],[51,22,2.1,1.1,-380],[66,28,1.7,.7,300],[80,20,1.5,1.3,-340],[92,24,2,.8,280],[15,16,1.8,1.6,-300],[45,34,1.3,1.8,360],[73,18,1.9,2,-420]];
-  const bang=[['우당탕!',12,22,-12,.6],['쾅!',62,16,10,1],['탕탕!!',20,52,8,1.4],['와장창!',55,44,-8,1.8],['우당탕탕!!',30,70,-4,2.3]];
-  return {ms:5200,html:`<div class="fx rv"><div class="rv-im" style="background-image:url('${im}')"></div><div class="rv-fl"></div><div class="rv-vg"></div>
+  const db=[[8,26,1.1,.1,320],[22,18,1.3,.3,-260],[37,30,1.0,.2,410],[51,22,1.4,.5,-380],[66,28,1.2,.15,300],[80,20,1.0,.6,-340],[92,24,1.3,.35,280],[15,16,1.2,.7,-300],[45,34,.9,.8,360],[73,18,1.3,.9,-420]];
+  const bang=[['우당탕!',10,24,-12,.15],['쾅!',64,18,10,.45],['탕탕!!',18,56,8,.75],['와장창!',56,46,-8,1.05],['우당탕탕!!',22,74,-4,1.3]];
+  return {ms:5000,pre:im?[im]:[],html:`<div class="fx rv"><div class="rv-a"><div class="rv-fl"></div>
   ${db.map(([l,s,d,dl,r])=>`<i class="rv-db" style="left:${l}%;--s:${s}px;--d:${d}s;--dl:${dl}s;--r:${r}deg"></i>`).join('')}
-  ${bang.map(([t,l,tp,r,dl])=>`<div class="rv-bang" style="left:${l}%;top:${tp}%;--r:${r}deg;--dl:${dl}s">${t}</div>`).join('')}
-  <div class="rv-tt"><b>포로 반란!</b><small>정산 중 포로들이 들고일어났다</small></div></div>`}},
+  ${bang.map(([t,l,tp,r,dl])=>`<div class="rv-bang" style="left:${l}%;top:${tp}%;--r:${r}deg;--dl:${dl}s">${t}</div>`).join('')}</div>
+  <div class="rv-b"><div class="rv-im" style="background-image:url('${im}')"></div><div class="rv-vg"></div><div class="rv-wf"></div>
+  <div class="rv-tt"><b>포로 반란!</b><small>정산 중 포로들이 들고일어났다</small></div></div></div>`}},
  prologue:()=>({ms:8000,html:`<div class="fx pro"><div class="vig"></div>${particles()}
   <div class="ln" style="top:0;left:0;animation-delay:.3s"></div><div class="ln" style="bottom:0;right:0;animation-delay:.5s"></div>
   <div class="cn" style="top:28px;left:28px;border-top-width:1px;border-left-width:1px;animation-delay:.3s"></div><div class="cn" style="top:28px;right:28px;border-top-width:1px;border-right-width:1px;animation-delay:.4s"></div>
@@ -2113,7 +2120,7 @@ const poll=setInterval(()=>{if(!doc)attach();else if(!playing)schedule()},1500);
 async function showDiag(){
  ensureHead();
  document.body.innerHTML='<div style="position:fixed;inset:0;overflow:auto;background:#0d0b08;color:#e6dccb;font:13px/1.8 sans-serif;padding:20px;white-space:pre-wrap" id="d"></div>';
- document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.55.3','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
+ document.getElementById('d').textContent=['둥지 시스템 연출 + 운명선택 진단 v1.55.4','','페이지 접근: '+diag.doc+' (권한 응답: '+diag.perm+')','연출 표식 발견: '+diag.seen+'개 (지금까지 최대 '+diag.maxSeen+'개)','재생 횟수: '+diag.played,'화면 검사: '+diag.scans+'번 · 마지막 '+(diag.lastScan?Math.round((Date.now()-diag.lastScan)/1000)+'초 전':'없음'),'재생 중 표시: '+(playing?'예':'아니오')+' · 검사 중 표시: '+(running?'예':'아니오'),'','최근 기록:',...(diag.hist.length?diag.hist:['(없음)']),'',
   '최근 오류:',...(diag.errors.length?diag.errors:['없음']),'','[미리보기] 아래 화면을 누르면 닫혀요.'].join('\n');
  document.body.addEventListener('click',async()=>{document.body.innerHTML='';try{await host.hideContainer()}catch{}},{once:true});
  await host.showContainer('fullscreen');
